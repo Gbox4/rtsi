@@ -3,6 +3,8 @@ import json
 import datetime
 from dateutil.parser import parse
 from general_utils import log_error, file_len
+import pathlib
+current_directory = str(pathlib.Path(__file__).parent.absolute())
 
 
 def get_daily_id(target_date=False):
@@ -10,7 +12,8 @@ def get_daily_id(target_date=False):
         target_date = datetime.date.today()
         print("No target_date supplied, defaulting to today.")
 
-    url = f'https://api.pushshift.io/reddit/search/submission/?subreddit=wallstreetbets&title=Daily%20Discussion%20Thread%20for%20{target_date.strftime("%B")}%20{str(int(target_date.strftime("%d")))}%2C%20{target_date.strftime("%Y")}'
+    url = f'https://api.pushshift.io/re
+    ddit/search/submission/?subreddit=wallstreetbets&title=Daily%20Discussion%20Thread%20for%20{target_date.strftime("%B")}%20{str(int(target_date.strftime("%d")))}%2C%20{target_date.strftime("%Y")}'
 
     json_response = json.loads(urllib.request.urlopen(url).read().decode())
 
@@ -52,7 +55,7 @@ def pull_comments(comment_ids):
 
 
         filename = f"daily_comments/{target_date.date()}.txt"
-        f = open(filename, "a", encoding='utf-8')
+        f = open(current_directory + filename, "a", encoding='utf-8')
         for comment in new_comments:
             text = comment['body']
             text = text.replace("\n"," ")
@@ -73,7 +76,7 @@ def pull_comments(comment_ids):
     print(len(new_comments))
 
     filename = f"daily_comments/{target_date.date()}.txt"
-    f = open(filename, "a", encoding='utf-8')
+    f = open(current_directory + filename, "a", encoding='utf-8')
     for comment in new_comments:
         text = comment['body']
         text = text.replace("\n"," ")

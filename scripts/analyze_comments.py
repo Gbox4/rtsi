@@ -1,17 +1,18 @@
 import re
 import numpy as np
 import time
+import pathlib
 start_time = time.time()
-
+current_directory = str(pathlib.Path(__file__).parent.absolute())
 
 tickers = []
-with open("nasdaqlisted.txt", "r") as f:
+with open(f"{current_directory}/data/nasdaqlisted.txt", "r") as f:
     for line in f:
         tickers.append(line.split("|")[0].lower())
 
 
 comments = []
-f = open("daily_comments/2020-12-24.txt", "r", encoding="utf-8")
+f = open(f"{current_directory}/data/daily_comments/2020-12-24.txt", "r", encoding="utf-8")
 for line in f:
     comments.append(line.replace("\n", "").lower())
 
