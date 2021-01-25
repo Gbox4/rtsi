@@ -3,6 +3,7 @@ import numpy as np
 import datetime
 import time
 import pathlib
+import sqlite3
 start_time = time.time()
 current_directory = str(pathlib.Path(__file__).parent.absolute())
 
@@ -13,16 +14,16 @@ def analyze_daily(target_date):
         for line in f:
             tickers.append(line.split("|")[0].lower())
 
-
-    comments = []
-    f = open(f"{current_directory}/../data/daily_comments/{target_date}.txt", "r", encoding="utf-8")
-    for line in f:
-        comments.append(line.replace("\n", "").lower())
-
     common_words = []
     f = open(f"{current_directory}/../data/common_words.txt", "r")
     for line in f:
         common_words.append(line.replace("\n", "").lower())
+
+    comments = []
+    
+    f = open(f"{current_directory}/../data/daily_comments/{target_date}.txt", "r", encoding="utf-8")
+    for line in f:
+        comments.append(line.replace("\n", "").lower())
 
     ticker_frequency = {}
 
@@ -49,3 +50,6 @@ def analyze_daily(target_date):
 
 if __name__ == "__main__":
     print(analyze_daily(datetime.date(2020,12,24)))
+
+
+# TODO: remove bot comments

@@ -4,6 +4,8 @@ import datetime
 from dateutil.parser import parse
 from general_utils import log_error, file_len
 import pathlib
+import sqlite3
+import pytz
 current_directory = str(pathlib.Path(__file__).parent.absolute())
 
 
@@ -37,51 +39,57 @@ def get_comment_ids(submission_id):
     return json.loads(urllib.request.urlopen(url).read().decode())['data']
 
 def pull_comments(comment_ids):
-    all_comments = []
+    conn = sqlite3.connect(f"{current_directory}/../tickerdat.db")
+    c = conn.cursor()
     for i in range(int(len(comment_ids)/1000)):
         print(f"{i*1000} / {len(comment_ids)}")
 
         comment_ids_group = comment_ids[i*1000:(i+1)*1000]
-        url = f"https://api.pushshift.io/reddit/comment/search?ids={','.join(comment_ids_group)}&fields=body,all_awardings,author,created_utc"
+        url = f"https://api.pushshift.io/reddit/comment/search?ids={','.join(comment_ids_group)}&fields=body,all_awardings,author,created_utc,permalink"
 
         while True:
             try:
                 new_comments = json.loads(urllib.request.urlopen(url).read().decode())['data']
-                target_date = parse(" ".join(new_comments[0]['permalink'].split('/')[-3].split("_")[-3:]))
+                test = new_comments[0]['created_utc']
                 break
             except:
                 print("Pushshift API call failed, trying again in 10 seconds...")
 
-        filename = f"daily_comments/{target_date.date()}.txt"
-        f = open(f"{current_directory}/../data/{filename}", "a", encoding='utf-8')
+
         for comment in new_comments:
             text = comment['body']
             text = text.replace("\n"," ")
-            f.write(text+"\n")
-            all_comments.append(comment)
-
-        f.close()
+            date_created = str(datetime.datetime.fromtimestamp(comment["created_utc"]).astimezone(pytz.timezone('US/Eastern')).date())
+            if len(comment['all_awardings']) == 0:
+                awards = 0
+            else:
+                awards = str(comment['all_awardings'])
+            c.execute(f"INSERT INTO daily_discussion_comment_data VALUES (?,?,?,?,?)", (awards, comment['author'], text, date_created, comment["created_utc"]))
+        conn.commit()
+        conn.close()
     
     comment_ids_group = comment_ids[int(len(comment_ids)/1000)*1000:]
     url = f"https://api.pushshift.io/reddit/comment/search?ids={','.join(comment_ids_group)}&fields=body,all_awardings,author,created_utc"
     while True:
         try:
             new_comments = json.loads(urllib.request.urlopen(url).read().decode())['data']
-            target_date = parse(" ".join(new_comments[0]['permalink'].split('/')[-3].split("_")[-3:]))
+            test = new_comments[0]['created_utc']
             break
         except:
             print("Pushshift API call failed, trying again in 10 seconds...")
 
-    filename = f"daily_comments/{target_date.date()}.txt"
-    f = open(f"{current_directory}/../data/{filename}", "a", encoding='utf-8')
+
     for comment in new_comments:
-        all_comments.append(comment)
         text = comment['body']
         text = text.replace("\n"," ")
-        f.write(text+"\n")
-        all_comments.append(comment)
-
-    f.close()
+        date_created = str(datetime.datetime.fromtimestamp(comment["created_utc"]).astimezone(pytz.timezone('US/Eastern')).date())
+        if len(comment['all_awardings']) == 0:
+            awards = 0
+        else:
+            awards = str(comment['all_awardings'])
+        c.execute(f"INSERT INTO daily_discussion_comment_data VALUES (?,?,?,?,?)", (awards, comment['author'], text, date_created, comment["created_utc"]))
+    conn.commit()
+    conn.close()
 
 
         
@@ -94,45 +102,6 @@ if __name__ == "__main__":
     comment_ids = get_comment_ids("kjdkdk")
     pull_comments(comment_ids)
 
-# This sucks because I found a way easier way to do this with pushshift instead of selenium webscraping
-r"""
-
-from selenium import webdriver
-import datetime
-from dateutil.parser import parse
-from general_utils import log_error
-
-def get_url(target_date=False):
-    if target_date == False:
-        target_date = datetime.date.today()
-        print("No target_date supplied, defaulting to today.")
-
-    url = f'https://www.reddit.com/r/wallstreetbets/search/?q=Daily%20Discussion%20Thread%20for%20{target_date.strftime("%B")}%20{str(int(target_date.strftime("%d")))}%2C%20{target_date.strftime("%Y")}&restrict_sr=1&sort=top'
-    print(f"Search url: {url}")
-    driver = webdriver.Chrome(executable_path=r'C:\Users\Gabe\Documents\programming\chromedriver.exe')
-    driver.get(url)
-
-    links = driver.find_elements_by_xpath('//*[@class="_eYtD2XCVieq6emjKBH3m"]')
-    for a in links:
-        if a.text.startswith('Daily Discussion Thread'):
-            date = " ".join(a.text.split(' ')[-3:])
-            parsed = parse(date) 
-            if parse(str(target_date)) == parsed:
-                link = str(a.find_element_by_xpath('../..').get_attribute('href'))
-    
-    driver.close()
-    try:
-        print(f"Daily discussion url: {link}")
-        return(link)
-    except:
-        msg = f"Daily discussion thread for {target_date} not found. Is the market open on this date? Search url used: {url}"
-        log_error(msg+"\n")
-        raise Exception(msg)
-
-if __name__ == "__main__":
-    target_date = datetime.datetime(int(input("Year: ")), int(input("Month: ")), int(input("Day: "))) # datetime.datetime(2021, 1, 21) # 
-    get_url
-"""
 
 
 # TODO: search top posts of the day and their comments
