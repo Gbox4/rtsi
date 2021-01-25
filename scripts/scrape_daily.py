@@ -12,8 +12,7 @@ def get_daily_id(target_date=False):
         target_date = datetime.date.today()
         print("No target_date supplied, defaulting to today.")
 
-    url = f'https://api.pushshift.io/re
-    ddit/search/submission/?subreddit=wallstreetbets&title=Daily%20Discussion%20Thread%20for%20{target_date.strftime("%B")}%20{str(int(target_date.strftime("%d")))}%2C%20{target_date.strftime("%Y")}'
+    url = f'https://api.pushshift.io/reddit/search/submission/?subreddit=wallstreetbets&title=Daily%20Discussion%20Thread%20for%20{target_date.strftime("%B")}%20{str(int(target_date.strftime("%d")))}%2C%20{target_date.strftime("%Y")}'
 
     json_response = json.loads(urllib.request.urlopen(url).read().decode())
 
@@ -43,7 +42,7 @@ def pull_comments(comment_ids):
         print(f"{i*1000} / {len(comment_ids)}")
 
         comment_ids_group = comment_ids[i*1000:(i+1)*1000]
-        url = f"https://api.pushshift.io/reddit/comment/search?ids={','.join(comment_ids_group)}"
+        url = f"https://api.pushshift.io/reddit/comment/search?ids={','.join(comment_ids_group)}&fields=body,all_awardings,author,created_utc"
 
         while True:
             try:
@@ -53,18 +52,18 @@ def pull_comments(comment_ids):
             except:
                 print("Pushshift API call failed, trying again in 10 seconds...")
 
-
         filename = f"daily_comments/{target_date.date()}.txt"
-        f = open(current_directory + filename, "a", encoding='utf-8')
+        f = open(f"{current_directory}/../data/{filename}", "a", encoding='utf-8')
         for comment in new_comments:
             text = comment['body']
             text = text.replace("\n"," ")
             f.write(text+"\n")
+            all_comments.append(comment)
 
         f.close()
     
     comment_ids_group = comment_ids[int(len(comment_ids)/1000)*1000:]
-    url = f"https://api.pushshift.io/reddit/comment/search?ids={','.join(comment_ids_group)}"
+    url = f"https://api.pushshift.io/reddit/comment/search?ids={','.join(comment_ids_group)}&fields=body,all_awardings,author,created_utc"
     while True:
         try:
             new_comments = json.loads(urllib.request.urlopen(url).read().decode())['data']
@@ -73,24 +72,25 @@ def pull_comments(comment_ids):
         except:
             print("Pushshift API call failed, trying again in 10 seconds...")
 
-    print(len(new_comments))
-
     filename = f"daily_comments/{target_date.date()}.txt"
-    f = open(current_directory + filename, "a", encoding='utf-8')
+    f = open(f"{current_directory}/../data/{filename}", "a", encoding='utf-8')
     for comment in new_comments:
+        all_comments.append(comment)
         text = comment['body']
         text = text.replace("\n"," ")
         f.write(text+"\n")
+        all_comments.append(comment)
 
     f.close()
+
 
         
 
 
 
 if __name__ == "__main__":
-    #target_date = datetime.datetime(int(input("Year: ")), int(input("Month: ")), int(input("Day: "))) # datetime.datetime(2021, 1, 21) # 
-    #get_daily_id(target_date=target_date)
+    target_date = datetime.date(int(input("Year: ")), int(input("Month: ")), int(input("Day: "))) # datetime.datetime(2021, 1, 21) # 
+    get_daily_id(target_date=target_date)
     comment_ids = get_comment_ids("kjdkdk")
     pull_comments(comment_ids)
 

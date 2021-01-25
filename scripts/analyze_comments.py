@@ -1,37 +1,51 @@
 import re
 import numpy as np
+import datetime
 import time
 import pathlib
 start_time = time.time()
 current_directory = str(pathlib.Path(__file__).parent.absolute())
 
-tickers = []
-with open(f"{current_directory}/data/nasdaqlisted.txt", "r") as f:
+def analyze_daily(target_date):
+    print(f"Analyzing {str(target_date)}")
+    tickers = []
+    with open(f"{current_directory}/../data/nasdaqlisted.txt", "r") as f:
+        for line in f:
+            tickers.append(line.split("|")[0].lower())
+
+
+    comments = []
+    f = open(f"{current_directory}/../data/daily_comments/{target_date}.txt", "r", encoding="utf-8")
     for line in f:
-        tickers.append(line.split("|")[0].lower())
+        comments.append(line.replace("\n", "").lower())
 
+    common_words = []
+    f = open(f"{current_directory}/../data/common_words.txt", "r")
+    for line in f:
+        common_words.append(line.replace("\n", "").lower())
 
-comments = []
-f = open(f"{current_directory}/data/daily_comments/2020-12-24.txt", "r", encoding="utf-8")
-for line in f:
-    comments.append(line.replace("\n", "").lower())
+    ticker_frequency = {}
 
-
-ticker_frequency = {}
-
-i = 1
-tickers = np.array(tickers)
-comments = np.array(comments)
-for comment in comments:
-    for ticker in tickers:
-        if ticker in comment:
-            if re.search(f"(^|\\W){ticker}(\\W|$)",comment):
-                try:
-                    ticker_frequency[ticker] += 1
-                except:
-                    ticker_frequency[ticker] = 1
+    tickers = np.array(tickers)
+    comments = np.array(comments)
+    for comment in comments:
+        for ticker in tickers:
+            if ticker in comment:
+                # If its a common word, perform a stricter search
+                if ticker in common_words:
+                    if re.search(f"\${ticker}(\\W|$)",comment):
+                        try:
+                            ticker_frequency[ticker.upper()] += 1
+                        except:
+                            ticker_frequency[ticker.upper()] = 1
+                else:
+                    if re.search(f"(^|\\W){ticker}(\\W|$)",comment):
+                        try:
+                            ticker_frequency[ticker.upper()] += 1
+                        except:
+                            ticker_frequency[ticker.upper()] = 1
     
-    i += 1
+    return ticker_frequency
 
-print(ticker_frequency)
-print("--- %s seconds ---" % (time.time() - start_time))
+if __name__ == "__main__":
+    print(analyze_daily(datetime.date(2020,12,24)))
