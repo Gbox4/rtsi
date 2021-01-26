@@ -48,7 +48,12 @@ def analyze_daily(target_date):
         i+=1
         if i%1000 == 0: print(i)
     
-    print(ticker_frequency)
+    # Put the data into db
+    for ticker, frequency in ticker_frequency.items():
+        c.execute(f"INSERT INTO daily_discussion_ticker_data VALUES (?,?,?)", (str(target_date),ticker,frequency))
+    
+    conn.commit()
+    conn.close()
 
 if __name__ == "__main__":
     print(analyze_daily(datetime.date(2020,12,24)))
