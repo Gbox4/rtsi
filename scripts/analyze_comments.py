@@ -10,43 +10,45 @@ current_directory = str(pathlib.Path(__file__).parent.absolute())
 def analyze_daily(target_date):
     print(f"Analyzing {str(target_date)}")
     tickers = []
-    with open(f"{current_directory}/../data/nasdaqlisted.txt", "r") as f:
+    with open(f"{current_directory}/../data/ticker_list.txt", "r") as f:
         for line in f:
-            tickers.append(line.split("|")[0].lower())
+            ticker = line.split(" ")[-1].replace("\n", '')
+            if not ticker.isnumeric() and ticker.isupper(): tickers.append(ticker.lower())
 
     common_words = []
     f = open(f"{current_directory}/../data/common_words.txt", "r")
     for line in f:
         common_words.append(line.replace("\n", "").lower())
 
-    comments = []
+    conn = sqlite3.connect(f"{current_directory}/../tickerdat.db")
+    c = conn.cursor()
     
-    f = open(f"{current_directory}/../data/daily_comments/{target_date}.txt", "r", encoding="utf-8")
-    for line in f:
-        comments.append(line.replace("\n", "").lower())
-
+    i=0
     ticker_frequency = {}
 
-    tickers = np.array(tickers)
-    comments = np.array(comments)
-    for comment in comments:
-        for ticker in tickers:
-            if ticker in comment:
-                # If its a common word, perform a stricter search
-                if ticker in common_words:
-                    if re.search(f"\${ticker}(\\W|$)",comment):
-                        try:
-                            ticker_frequency[ticker.upper()] += 1
-                        except:
-                            ticker_frequency[ticker.upper()] = 1
-                else:
-                    if re.search(f"(^|\\W){ticker}(\\W|$)",comment):
-                        try:
-                            ticker_frequency[ticker.upper()] += 1
-                        except:
-                            ticker_frequency[ticker.upper()] = 1
+    for ticker in tickers:
+        comments = list(c.execute("SELECT text FROM daily_discussion_comment_data WHERE date=? AND text LIKE ?", (str(target_date),f"%{ticker}%")))
+        for comment in comments:
+            comment = comment[0].lower()
+            # If its a common word, perform a stricter search
+            if ticker in common_words or len(ticker) == 1:
+                if re.search(f"\${ticker}(\\W|$)",comment):
+                    try:
+                        ticker_frequency[ticker.upper()] += 1
+                    except:
+                        ticker_frequency[ticker.upper()] = 1
+            else:
+                if re.search(f"(^|\\W){ticker}(\\W|$)",comment):
+                    try:
+                        ticker_frequency[ticker.upper()] += 1
+                    except:
+                        ticker_frequency[ticker.upper()] = 1
+                
+
+        i+=1
+        if i%1000 == 0: print(i)
     
-    return ticker_frequency
+    print(ticker_frequency)
 
 if __name__ == "__main__":
     print(analyze_daily(datetime.date(2020,12,24)))
