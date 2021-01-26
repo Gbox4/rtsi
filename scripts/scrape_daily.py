@@ -36,6 +36,7 @@ def get_daily_id(target_date=False):
 
 def get_comment_ids(submission_id):
     url = f"https://api.pushshift.io/reddit/submission/comment_ids/{submission_id}"
+    print(f"Comment ids url: {url}")
     return json.loads(urllib.request.urlopen(url).read().decode())['data']
 
 def pull_comments(comment_ids):
@@ -65,8 +66,6 @@ def pull_comments(comment_ids):
             else:
                 awards = str(comment['all_awardings'])
             c.execute(f"INSERT INTO daily_discussion_comment_data VALUES (?,?,?,?,?)", (awards, comment['author'], text, date_created, comment["created_utc"]))
-        conn.commit()
-        conn.close()
     
     comment_ids_group = comment_ids[int(len(comment_ids)/1000)*1000:]
     url = f"https://api.pushshift.io/reddit/comment/search?ids={','.join(comment_ids_group)}&fields=body,all_awardings,author,created_utc"

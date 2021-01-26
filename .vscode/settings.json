@@ -1,0 +1,11 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "conn",
+            "database": "${workspaceFolder:rtsi}/tickerdat.db"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
+}
