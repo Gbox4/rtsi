@@ -14,7 +14,7 @@ def get_daily_id(target_date=False):
         target_date = datetime.date.today()
         print("No target_date supplied, defaulting to today.")
 
-    url = f'https://api.pushshift.io/reddit/search/submission/?subreddit=wallstreetbets&title=Daily%20Discussion%20Thread%20for%20{target_date.strftime("%B")}%20{str(int(target_date.strftime("%d")))}%2C%20{target_date.strftime("%Y")}'
+    url = f'https://api.pushshift.io/reddit/search/submission/?subreddit=wallstreetbets&title=Daily%20Discussion%20Thread%20for%20{target_date.strftime("%B")}%20{str(target_date.strftime("%d"))}%2C%20{target_date.strftime("%Y")}'
 
     json_response = json.loads(urllib.request.urlopen(url).read().decode())
 
@@ -37,7 +37,12 @@ def get_daily_id(target_date=False):
 def get_comment_ids(submission_id):
     url = f"https://api.pushshift.io/reddit/submission/comment_ids/{submission_id}"
     print(f"Comment ids url: {url}")
-    return json.loads(urllib.request.urlopen(url).read().decode())['data']
+    comment_ids = json.loads(urllib.request.urlopen(url).read().decode())['data']
+    if len(comment_ids) < 1000:
+        msg = f"The comment_ids list seems to be too short, is this the correct url? {url}"
+        log_error(msg)
+        raise Exception(msg)
+    return comment_ids
 
 def pull_comments(comment_ids):
     conn = sqlite3.connect(f"{current_directory}/../tickerdat.db")
