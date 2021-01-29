@@ -4,6 +4,6 @@ from analyze_comments import analyze_daily
 
 
 target_date = datetime.date(int(input("Year: ")), int(input("Month: ")), int(input("Day: ")))
-comment_ids = get_comment_ids(get_daily_id(target_date=target_date))
-pull_comments(comment_ids)
+#comment_ids = get_comment_ids(get_daily_id(target_date=target_date))
+#pull_comments(comment_ids)
 analyze_daily(target_date)

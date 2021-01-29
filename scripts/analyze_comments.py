@@ -19,6 +19,19 @@ def analyze_daily(target_date):
     f = open(f"{current_directory}/../data/common_words.txt", "r")
     for line in f:
         common_words.append(line.replace("\n", "").lower())
+    f.close()
+
+    ignore_authors = []
+    f = open(f"{current_directory}/../data/ignore_authors.txt", "r")
+    for line in f:
+        ignore_authors.append(line.replace("\n", ""))
+    f.close()
+
+    append_sql_cmd = ""
+    append_sql_args = []
+    for author in ignore_authors:
+        append_sql_cmd += f" AND NOT author=?"
+        append_sql_args.append(author)
 
     conn = sqlite3.connect(f"{current_directory}/../tickerdat.db")
     c = conn.cursor()
@@ -27,7 +40,8 @@ def analyze_daily(target_date):
     ticker_frequency = {}
 
     for ticker in tickers:
-        comments = list(c.execute("SELECT text FROM daily_discussion_comment_data WHERE date=? AND text LIKE ?", (str(target_date),f"%{ticker}%")))
+        # Constructing the SQL query
+        comments = list(c.execute("SELECT text FROM daily_discussion_comment_data WHERE date=? AND text LIKE ?" + append_sql_cmd, (str(target_date), f"%{ticker}%", *append_sql_args)))
         for comment in comments:
             comment = comment[0].lower()
             # If its a common word, perform a stricter search
@@ -54,9 +68,10 @@ def analyze_daily(target_date):
     
     conn.commit()
     conn.close()
+    print("--- %s seconds ---" % (time.time() - start_time))
 
 if __name__ == "__main__":
-    print(analyze_daily(datetime.date(2020,12,24)))
+    analyze_daily(datetime.date(2020,12,24))
 
 
 # TODO: remove bot comments
