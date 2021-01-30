@@ -5,7 +5,7 @@ from analyze_comments import analyze_daily
 
 #target_date = datetime.date(int(input("Year: ")), int(input("Month: ")), int(input("Day: ")))
 
-for day in range(1,24):
+for day in range(1,5):
     target_date = datetime.date(2020, 12, day)
     #print(f"Fetching comments for {day}")
 
