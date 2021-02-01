@@ -9,17 +9,6 @@ current_directory = str(pathlib.Path(__file__).parent.absolute())
 
 def analyze_daily(target_date):
     print(f"Analyzing {str(target_date)}")
-    tickers = []
-    with open(f"{current_directory}/../data/ticker_list.txt", "r") as f:
-        for line in f:
-            ticker = line.split(" ")[-1].replace("\n", '')
-            if not ticker.isnumeric() and ticker.isupper(): tickers.append(ticker.lower())
-
-    common_words = []
-    f = open(f"{current_directory}/../data/common_words.txt", "r")
-    for line in f:
-        common_words.append(line.replace("\n", "").lower())
-    f.close()
 
     ignore_authors = []
     f = open(f"{current_directory}/../data/ignore_authors.txt", "r")
@@ -39,28 +28,31 @@ def analyze_daily(target_date):
     i=0
     ticker_frequency = {}
 
-    for ticker in tickers:
-        # Constructing the SQL query
-        comments = list(c.execute("SELECT text FROM daily_discussion_comment_data WHERE date=? AND text LIKE ?" + append_sql_cmd, (str(target_date), f"%{ticker}%", *append_sql_args)))
+
+
+    for ticker in [tup[0] for tup in list(c.execute("SELECT ticker FROM ticker_metadata WHERE NOT obscure AND NOT common_word;"))]:
+        count = 0
+        comments = [tup[0].lower() for tup in list(c.execute("SELECT text FROM daily_discussion_comment_data WHERE date=? AND text LIKE ?" + append_sql_cmd, (str(target_date), f"%{ticker}%", *append_sql_args)))]
         for comment in comments:
-            comment = comment[0].lower()
-            # If its a common word, perform a stricter search
-            if ticker in common_words or len(ticker) == 1:
-                if re.search(f"\${ticker}(\\W|$)",comment):
-                    try:
-                        ticker_frequency[ticker.upper()] += 1
-                    except:
-                        ticker_frequency[ticker.upper()] = 1
-            else:
-                if re.search(f"(^|\\W){ticker}(\\W|$)",comment):
-                    try:
-                        ticker_frequency[ticker.upper()] += 1
-                    except:
-                        ticker_frequency[ticker.upper()] = 1
-                
+            if re.search(f"(^|\\W){ticker.lower()}(\\W|$)",comment):
+                count += 1
+        
+        ticker_frequency[ticker.upper()] = count
 
         i+=1
-        if i%1000 == 0: print(i)
+        if i%100 == 0: print(i)
+
+    for ticker in [tup[0] for tup in list(c.execute("SELECT ticker FROM ticker_metadata WHERE NOT obscure AND common_word;"))]:
+        count = 0
+        comments = [tup[0].lower() for tup in list(c.execute("SELECT text FROM daily_discussion_comment_data WHERE date=? AND text LIKE ?" + append_sql_cmd, (str(target_date), f"%{ticker}%", *append_sql_args)))]
+        for comment in comments:
+            if re.search(f"\${ticker}(\\W|$)",comment):
+                count += 1
+        
+        ticker_frequency[ticker.upper()] = count
+
+        i+=1
+        if i%100 == 0: print(i)
     
     # Put the data into db
     for ticker, frequency in ticker_frequency.items():

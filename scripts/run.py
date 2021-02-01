@@ -8,23 +8,15 @@ import re
 import time
 start_time = time.time()
 
-def regexp(expr, item):
-    reg = re.compile(expr)
-    return reg.search(item) is not None
+
+for day in range(10,24):
+    analyze_daily(datetime.date(2020,12,day))
 
 
-
-conn = sqlite3.connect(f"{current_directory}/../tickerdat.db")
-conn.create_function("REGEXP", 2, regexp)
-c = conn.cursor()
-
-all_text = " ".join([tup[0] for tup in list(c.execute("SELECT text FROM daily_discussion_comment_data"))]).lower()
-
-
-for ticker in [tup[0] for tup in list(c.execute("SELECT ticker FROM ticker_metadata WHERE LENGTH(ticker)=1;"))]:
+"""for ticker in [tup[0] for tup in list(c.execute("SELECT ticker FROM ticker_metadata WHERE LENGTH(ticker)=1;"))]:
     if not re.search(f'\${ticker.lower()}(\\W|$)',all_text):
         print(ticker)
-        c.execute(f"UPDATE ticker_metadata SET obscure=1 WHERE ticker=?", (ticker,))
+        c.execute(f"UPDATE ticker_metadata SET obscure=1 WHERE ticker=?", (ticker,))"""
 
 
 """for ticker in [tup[0] for tup in list(c.execute("SELECT ticker FROM ticker_metadata WHERE NOT common_word"))]:
@@ -40,5 +32,5 @@ for ticker in [tup[0] for tup in list(c.execute("SELECT ticker FROM ticker_metad
         #c.execute(f"UPDATE ticker_metadata SET obscure=1 WHERE ticker={ticker}")"""
 
 
-conn.commit()
-conn.close()
+#conn.commit()
+#conn.close()
