@@ -11,7 +11,7 @@ start_time = time.time()
 
 for month in range(4, 12):
     for day in range(1,24):
-        target_date = datetime.date(2020, 12, day)
+        target_date = datetime.date(2020, month, day)
         print(f"Fetching comments for {day}")
 
         try:
